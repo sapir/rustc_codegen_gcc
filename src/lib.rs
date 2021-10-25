@@ -42,6 +42,7 @@ mod context;
 mod coverageinfo;
 mod debuginfo;
 mod declare;
+mod int;
 mod intrinsic;
 mod mono_item;
 mod type_;
