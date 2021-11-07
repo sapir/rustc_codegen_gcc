@@ -444,12 +444,15 @@ impl<'a, 'gcc, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'gcc, 'tcx> {
         self.block.expect("block").end_with_switch(None, value, default_block, &gcc_cases);
     }
 
-    fn invoke(&mut self, _typ: Type<'gcc>, _func: RValue<'gcc>, _args: &[RValue<'gcc>], then: Block<'gcc>, catch: Block<'gcc>, _funclet: Option<&Funclet>) -> RValue<'gcc> {
-        let condition = self.context.new_rvalue_from_int(self.bool_type, 0);
-        self.llbb().end_with_conditional(None, condition, then, catch);
-        self.context.new_rvalue_from_int(self.int_type, 0)
-
-        // TODO(antoyo)
+    fn invoke(&mut self, typ: Type<'gcc>, func: RValue<'gcc>, args: &[RValue<'gcc>], then: Block<'gcc>, catch: Block<'gcc>, _funclet: Option<&Funclet>) -> RValue<'gcc> {
+        let block = self.block.expect("block");
+        let function = block.get_function();
+        unsafe { RETURN_VALUE_COUNT += 1 };
+        let result_var = function.new_local(None, typ, &format!("loadedValue{}", unsafe { RETURN_VALUE_COUNT }));
+        let result = self.call(typ, func, args, None);
+        self.llbb().add_assignment(None, result_var, result);
+        self.llbb().wrap_with_try(None, then, catch);
+        result_var.to_rvalue()
     }
 
     fn unreachable(&mut self) {
@@ -1262,36 +1265,37 @@ impl<'a, 'gcc, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'gcc, 'tcx> {
         // rustc_codegen_ssa now calls the unwinding builder methods even on panic=abort.
     }
 
-    fn set_cleanup(&mut self, _landing_pad: RValue<'gcc>) {
-        // TODO(antoyo)
+    fn set_cleanup(&mut self, landing_pad: RValue<'gcc>) {
+        // TODO: set landing_pad cleanup flag to true
+        // todo!("unwind: set_cleanup");
     }
 
-    fn resume(&mut self, _exn: RValue<'gcc>) -> RValue<'gcc> {
-        unimplemented!();
+    fn resume(&mut self, exn: RValue<'gcc>) -> RValue<'gcc> {
+        todo!("unwind: resume");
     }
 
     fn cleanup_pad(&mut self, _parent: Option<RValue<'gcc>>, _args: &[RValue<'gcc>]) -> Funclet {
-        unimplemented!();
+        todo!("cleanup_pad");
     }
 
     fn cleanup_ret(&mut self, _funclet: &Funclet, _unwind: Option<Block<'gcc>>) -> RValue<'gcc> {
-        unimplemented!();
+        todo!("cleanup_ret");
     }
 
     fn catch_pad(&mut self, _parent: RValue<'gcc>, _args: &[RValue<'gcc>]) -> Funclet {
-        unimplemented!();
+        todo!("catch_pad");
     }
 
     fn catch_switch(&mut self, _parent: Option<RValue<'gcc>>, _unwind: Option<Block<'gcc>>, _num_handlers: usize) -> RValue<'gcc> {
-        unimplemented!();
+        todo!("catch_switch");
     }
 
     fn add_handler(&mut self, _catch_switch: RValue<'gcc>, _handler: Block<'gcc>) {
-        unimplemented!();
+        todo!("add_handler");
     }
 
     fn set_personality_fn(&mut self, _personality: RValue<'gcc>) {
-        // TODO(antoyo)
+        // TODO: unwind
     }
 
     // Atomic Operations
